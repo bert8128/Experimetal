@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="Bedlam1">
+</Property><Property Name="Solution File" Value="C:\Data\Not RTFM\CSharp\Bedlam\Bedlam1\Bedlam1.sln">
+</Property><Property Name="User Options File" Value="C:\Data\Not RTFM\CSharp\Bedlam\Bedlam1\Bedlam1.suo">
+</Property><Property Name="Date" Value="16 July 2011">
+</Property><Property Name="Time" Value="11:09">
+</Property></Properties><Event ErrorLevel="0" Project="" Source="Bedlam1.sln" Description="File successfully backed up as C:\Data\Not RTFM\CSharp\Bedlam\Bedlam2\Backup\Bedlam1.sln">
+</Event><Event ErrorLevel="0" Project="" Source="Bedlam1.suo" Description="File successfully backed up as C:\Data\Not RTFM\CSharp\Bedlam\Bedlam2\Backup\Bedlam1.suo">
+</Event><Event ErrorLevel="0" Project="Bedlam1" Source="Bedlam1\Bedlam1.csproj" Description="Project file successfully backed up as C:\Data\Not RTFM\CSharp\Bedlam\Bedlam2\Backup\Bedlam1\Bedlam1.csproj">
+</Event><Event ErrorLevel="0" Project="Bedlam1" Source="Bedlam1\Bedlam1.csproj.user" Description="Project user file successfully backed up as C:\Data\Not RTFM\CSharp\Bedlam\Bedlam2\Backup\Bedlam1\Bedlam1.csproj.user">
+</Event><Event ErrorLevel="0" Project="Bedlam1" Source="Bedlam1\DLX.cs" Description="File successfully backed up as C:\Data\Not RTFM\CSharp\Bedlam\Bedlam2\Backup\Bedlam1\DLX.cs">
+</Event><Event ErrorLevel="0" Project="Bedlam1" Source="Bedlam1\Program.cs" Description="File successfully backed up as C:\Data\Not RTFM\CSharp\Bedlam\Bedlam2\Backup\Bedlam1\Program.cs">
+</Event><Event ErrorLevel="0" Project="Bedlam1" Source="Bedlam1\Bedlam1.csproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="Bedlam1" Source="Bedlam1\Bedlam1.csproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="" Source="Bedlam1.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="Bedlam1.sln" Description="Converted">
+</Event><Event ErrorLevel="0" Project="Bedlam1" Source="Bedlam1\Bedlam1.csproj" Description="Scan complete: Upgrade not required for project files.">
+</Event></UpgradeLog>

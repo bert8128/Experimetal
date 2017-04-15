@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{2CB7B738-5BC7-47E4-8A3B-E817BDB20668}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ConsoleApplication1</RootNamespace>
+    <AssemblyName>Euler Project</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="11 to 50\Euler11.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="11 to 50\Euler12.cs" />
+    <Compile Include="11 to 50\Euler13.cs" />
+    <Compile Include="11 to 50\Euler14.cs" />
+    <Compile Include="11 to 50\Euler16.cs" />
+    <Compile Include="11 to 50\Euler17.cs" />
+    <Compile Include="11 to 50\Euler21.cs" />
+    <Compile Include="11 to 50\Euler22.cs" />
+    <Compile Include="11 to 50\Euler23.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="11 to 50\Euler24.cs" />
+    <Compile Include="11 to 50\Euler44.cs" />
+    <Compile Include="11 to 50\Euler45.cs" />
+    <Compile Include="11 to 50\Euler47.cs" />
+    <Compile Include="11 to 50\Euler48.cs" />
+    <Compile Include="11 to 50\Euler49.cs" />
+    <Compile Include="11 to 50\Euler50.cs" />
+    <Compile Include="50 to 100\Euler57.cs" />
+    <Compile Include="BigNum.cs" />
+    <Compile Include="Euler243.cs" />
+    <Compile Include="11 to 50\Euler25.cs" />
+    <Compile Include="11 to 50\Euler26.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="11 to 50\Euler27.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="11 to 50\Euler28.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="11 to 50\Euler29a.cs" />
+    <Compile Include="1 to 10\Euler3.cs" />
+    <Compile Include="11 to 50\Euler30.cs" />
+    <Compile Include="11 to 50\Euler32.cs" />
+    <Compile Include="11 to 50\Euler34.cs" />
+    <Compile Include="11 to 50\Euler36.cs" />
+    <Compile Include="11 to 50\Euler37.cs" />
+    <Compile Include="11 to 50\Euler38.cs" />
+    <Compile Include="11 to 50\Euler39.cs" />
+    <Compile Include="Euler391.cs" />
+    <Compile Include="11 to 50\Euler40.cs" />
+    <Compile Include="11 to 50\Euler41.cs" />
+    <Compile Include="11 to 50\Euler42.cs" />
+    <Compile Include="11 to 50\Euler43.cs" />
+    <Compile Include="11 to 50\Euler46.cs" />
+    <Compile Include="Euler393.cs" />
+    <Compile Include="Euler397.cs" />
+    <Compile Include="Euler51.cs" />
+    <Compile Include="Euler56.cs" />
+    <Compile Include="Euler59.cs" />
+    <Compile Include="Euler65.cs" />
+    <Compile Include="Euler69.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Euler89.cs" />
+    <Compile Include="Euler92.cs" />
+    <Compile Include="EulerUtils.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GCHQ.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
