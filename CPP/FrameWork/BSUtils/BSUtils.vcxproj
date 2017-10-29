@@ -113,6 +113,7 @@
   <ItemGroup>
     <ClInclude Include="Association.h" />
     <ClInclude Include="Hash.h" />
+    <ClInclude Include="Test.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Hash.cpp" />
