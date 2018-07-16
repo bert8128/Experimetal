@@ -7,8 +7,8 @@ class Vector2:
             self.x=0.0
             self.y=0.0
         else:
-            self.x=x
-            self.y=y
+            self.x=float(x)
+            self.y=float(y)
 
     def dot(self, v2):
         return self.x*v2.x + self.y*v2.y
@@ -27,6 +27,9 @@ class Vector2:
         dx = self.x-v2.x
         dy = self.y-v2.y
         return dx*dx + dy*dy
+        
+    def distance(self, v2):
+        return math.sqrt(self.distSqr(v2))
         
     def tangent(self):
         return Vector2(-1*self.y, self.x)
@@ -53,13 +56,13 @@ class Vector2:
 
     def scale(self, factor):
         v2 = copy.copy(self)
-        v2.x *= factor
-        v2.y *= factor
+        v2.x *= float(factor)
+        v2.y *= float(factor)
         return v2
         
     def scale_ip(self, factor):
-        self.x *= factor
-        self.y *= factor
+        self.x *= float(factor)
+        self.y *= float(factor)
         
     def oneX(self):
         if self.x >= 0.0:

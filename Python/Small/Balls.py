@@ -11,17 +11,13 @@ RED = (255, 0, 0)
 WHITE = (255, 255, 255)
 
 wwidth = 10.0 # world is 10m wide
-max_start_wheight = 8.0 # start height is up to 8m
-ceiling = max_start_wheight*2.0
-fpa=10
+max_start_wheight = 6.5 # start height is up to 8m
+ceiling = max_start_wheight*2.0 # off screen ceiling
+fpa=100
 g=Vector2(0.0,-9.81)
 max_energy=g.y*max_start_wheight*-1.0
 
-class Energy:
-    def __init__(self):
-        self.e = 0
-
-e = Energy()
+totalEnergy = 0.0 
 
 class Ball:
     """
@@ -34,13 +30,18 @@ class Ball:
         self.energy=0.0  #joules
         self.collide = False
         self.redness = 255
-        self.mass=100 #grams
-        self.ball_size = 0.5 # 0.5m
+        self.mass=100.0 #grams
+        self.ball_size = 0.1 # 0.5m
         self.rect = pygame.Rect(0, 0, self.ball_size*2, self.ball_size*2)
         
     def initPos(self):
         self.p.x = random.randrange(int(self.ball_size), int(wwidth - self.ball_size))
         self.p.y = random.randrange(int(self.ball_size), int(max_start_wheight - self.ball_size))
+        self.pb = self.p
+        
+    def initPosXY(self, x, y):
+        self.p.x = float(x)
+        self.p.y = float(y)
         self.pb = self.p
         
     def randspeed(self, lo, hi, step):
@@ -50,7 +51,6 @@ class Ball:
         return speed
     
     def initVel(self, maxEnergy):
-        nrg = 0.
         while True:
             #everything is ,ultiplied by 100 as andrange takes ints only
             self.v.x = random.randrange(-200, 300, 1)/100.0
@@ -58,6 +58,11 @@ class Ball:
             self.energy = self.calcEnergy()
             if self.energy < maxEnergy:
                 break
+        
+    def initVelV(self, vx, vy):
+        self.v.x =  float(vx)
+        self.v.y =  float(vy)
+        self.energy = self.calcEnergy()
         
     def move(self, timeDelta):
         self.pb = copy.deepcopy(self.p)
@@ -71,8 +76,8 @@ class Ball:
         self.v.plus_ip(a2)
         
     def scaleV(self, f_x, f_y):
-        self.v.x *= f_x
-        self.v.y *= f_y
+        self.v.x *= float(f_x)
+        self.v.y *= float(f_y)
         
     def ke(self):
         return 0.5 * self.v.magSqr()
@@ -90,11 +95,26 @@ def make_ball():
     """  
     Function to make a new, random ball.
     """
+    global totalEnergy
+
     ball = Ball()
     ball.initPos()
     ball.initVel(max_energy)
 
-    e.e += ball.energy
+    totalEnergy += ball.energy
+ 
+    return ball
+
+def make_test_ball():
+    """  
+    Function to make a new, non-random ball.
+    """
+    global totalEnergy
+
+    ball = Ball()
+    ball.initPosXY(1.0, 6.0)
+    ball.initVelV(0.0, -1.0)
+    totalEnergy += ball.energy
  
     return ball
 
@@ -124,20 +144,44 @@ def calcCollision(p1, p2, v1, v2, m1, m2):
     return v1a, v2a
 
 def handleCollisions(balls, collisions):
+    global totalEnergy
+
     for i in collisions:
         j = collisions[i]
+        ballsEnergyBefore = balls[i].energy + balls[j].energy
+
         v1a, v2a = calcCollision(balls[i].p, balls[j].p, balls[i].v, balls[j].v, balls[i].mass, balls[j].mass)
-        ebefore = e.e  
-        e.e -= balls[i].energy
-        e.e -= balls[j].energy
         balls[i].v = v1a   
         balls[j].v = v2a
+
+        ballsEnergyAfter = balls[i].calcEnergy() +balls[j].calcEnergy()
+
+        # make sure the overall energy is not increasing
+        mult = ballsEnergyAfter/ballsEnergyBefore
+        if mult > 1.0:
+            mult -= 1.0
+            #mult /= 2.0
+            #mult = math.sqrt(mult)
+            mult *= mult
+            mult += 1.0
+        elif mult < 1.0:
+            mult = 1.0 - mult
+            #mult /= 2.0
+            #mult = math.sqrt(mult)
+            mult *= mult
+            mult = 1.0 - mult
+        mult = 1.0/mult
+        #balls[i].scaleV(1, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
+        #balls[j].scaleV(1, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
+        balls[i].scaleV(mult, mult) # is the sqrt necessary for a simple sim?
+        balls[j].scaleV(mult, mult) # is the sqrt necessary for a simple sim?
+
         balls[i].energy = balls[i].calcEnergy()
         balls[j].energy = balls[j].calcEnergy()
-        e.e += balls[i].energy
-        e.e += balls[j].energy
-        eafter = e.e
-        
+
+        totalEnergy -= ballsEnergyBefore
+        totalEnergy += balls[i].energy + balls[j].energy
+
 def updateBalls(balls, timeDelta):
     cols = {}
     revcols = {}
@@ -147,14 +191,14 @@ def updateBalls(balls, timeDelta):
         ball.accelerate(g, timeDelta)
 
         if ball.p.y >= ceiling - ball.ball_size or ball.p.y <= ball.ball_size:
-            ball.v.y *= -1
+            ball.v.y *= -1.0
             # Fudges - if the balls go off screen bring them back
             if ball.p.y > ceiling - ball.ball_size:
                 ball.p.y -= ball.p.y - (ceiling - ball.ball_size)
             if ball.p.y < ball.ball_size:
                 ball.p.y += ball.ball_size - ball.p.y
         if ball.p.x >= wwidth - ball.ball_size or ball.p.x <= ball.ball_size:
-            ball.v.x *= -1
+            ball.v.x *= -1.0
             # Fudges - if the balls go off screen bring them back
             if ball.p.x > wwidth - ball.ball_size:
                 ball.p.x -= ball.p.x - (wwidth - ball.ball_size)
@@ -163,25 +207,25 @@ def updateBalls(balls, timeDelta):
 
         # Fudge - make sure that the total energy of thw ball doesnt chnage by scaling the velocity
         mult = ball.energy/ball.calcEnergy()
-        ball.scaleV(1, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
+        ball.scaleV(1.0, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
         
     numballs = len(balls)
     for i in range (0, numballs):
-        if balls[i].p.x <= 0 or balls[i].p.x >= wwidth or balls[i].p.y <= 0 or balls[i].p.y >= ceiling:
+        if balls[i].p.x <= 0.0 or balls[i].p.x >= wwidth or balls[i].p.y <= 0.0 or balls[i].p.y >= ceiling:
             break # fudge - if the balls go outside the container then they never collide
-        sqrdist=2.0*2.0*balls[i].ball_size
         for j in range (i+1, numballs):
             # this isn't great.  The step size means that there may be two or more balls all colliding
-            # with this ball. we should collide with the cosest ball. but this algo just collidez
+            # with this ball. we should collide with the cosest ball. but this algo just collides
             # with the first one it finds
             # note that a ball can only ever collide with one ball in a single frame.
             # maybe that is the fix - handle every collision pair 
-            sqrdist *= balls[j].ball_size 
-            dist = balls[i].p.distSqr(balls[j].p)
-            if dist <= sqrdist:
+            twoRadii = balls[i].ball_size + balls[j].ball_size
+            minDistSqrd = twoRadii * twoRadii
+            distSqrd = balls[i].p.distSqr(balls[j].p)
+            if distSqrd <= minDistSqrd:
                 if i not in cols and j not in revcols and i not in revcols:
-                    dist0 = balls[i].pb.distSqr(balls[j].pb)
-                    if dist < dist0:
+                    distSqrd0 = balls[i].pb.distSqr(balls[j].pb)
+                    if distSqrd < distSqrd0: # closer than it was before?
                         cols[i] = j
                         revcols[j] = i
                         balls[i].redness = 0
@@ -190,12 +234,11 @@ def updateBalls(balls, timeDelta):
                     
     handleCollisions(balls, cols)
     
-def drawBalls(screen, balls, ppm):
+def drawBalls(screen, balls, ppm, v_ceiling):
     for ball in balls:
         x = ball.p.x*ppm
-        y = (max_start_wheight - ball.p.y)*ppm
+        y = float(v_ceiling)-(ball.p.y*ppm)
         sz = ball.ball_size*ppm
-        print(ball.p.x, ball.p.y, x, y)
         pygame.draw.circle(screen, (255, ball.redness, ball.redness), [int(x), int(y)], int(sz))
         if ball.redness < 255:
             ball.redness += fpa / 5
@@ -206,6 +249,8 @@ def main():
     """
     This is our main program.
     """
+    global totalEnergy
+
     pygame.init()
  
     # Set the height and width of the screen
@@ -223,6 +268,7 @@ def main():
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock() 
  
+    totalEnergy = 0.0
     balls = []
  
     ball = make_ball()
@@ -230,13 +276,12 @@ def main():
 
     start = datetime.datetime.now().timestamp()
 
-    print(pixels_per_metre, ceiling, max_start_wheight)
-
     # -------- Main Program Loop -----------
     while not done:
         end = datetime.datetime.now().timestamp()
         timeDelta = end - start
         start = end
+        #timeDelta = 0.05
         # --- Event Processing
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -256,7 +301,9 @@ def main():
  
         screen.fill(BLACK)
  
-        drawBalls(screen, balls, pixels_per_metre)
+        drawBalls(screen, balls, pixels_per_metre, SCREEN_HEIGHT)
+
+        print(totalEnergy)
   
         clock.tick(fpa)
  
