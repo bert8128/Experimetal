@@ -30,8 +30,9 @@ class Ball:
         self.v = Vector2(0.0, 0.0) # velocity metres per second
         self.collide = False
         self.redness = 255
-        self.mass=100.0 #grams
-        self.ball_size = 0.1 # 0.5m
+        self.density = 1000.0 #grams/m^2
+        self.ball_size = random.random()*0.1 + 0.05 #metres
+        self.mass = math.pi*self.ball_size*self.ball_size*self.density #grams
         self.energy = self.calcEnergy() # joules
         
     def initPos(self):
@@ -198,7 +199,7 @@ def updateBalls(balls, timeDelta):
         ke = ball.ke()
         energyGain = newEnergy - ball.energy
         prevKE = ke - energyGain
-        if prevKE > 0: 
+        if ke > 0.0: 
             mult = math.sqrt(prevKE/ke)
             ball.v.scale_ip(mult)
         
