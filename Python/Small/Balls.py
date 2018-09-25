@@ -172,8 +172,6 @@ def handleCollisions(balls, collisions):
         totalCalcEnergy += balls[j].calcEnergy()
 
 def updateBalls(balls, timeDelta):
-    cols = {}
-    revcols = {}
     for ball in balls:
         ball.collide = False
         ball.move(timeDelta)
@@ -200,10 +198,15 @@ def updateBalls(balls, timeDelta):
         energyGain = newEnergy - ball.energy
         prevKE = ke - energyGain
         if ke > 0.0: 
-            mult = math.sqrt(prevKE/ke)
-            ball.v.scale_ip(mult)
+            mult = prevKE/ke
+            if mult > 0.0000001:
+                mult = math.sqrt(mult)
+                ball.v.scale_ip(mult)
         
+def findCollisions(balls):
     numballs = len(balls)
+    cols = {}
+    revcols = {}
     for i in range (0, numballs):
         if balls[i].p.x <= 0.0 or balls[i].p.x >= wwidth or balls[i].p.y <= 0.0 or balls[i].p.y >= ceiling:
             break # fudge - if the balls go outside the container then they never collide
@@ -225,8 +228,7 @@ def updateBalls(balls, timeDelta):
                         balls[i].redness = 0
                         balls[j].redness = 0
                         break
-                    
-    handleCollisions(balls, cols)
+    return cols
     
 def drawBalls(screen, balls, ppm, v_ceiling):
     for ball in balls:
@@ -294,6 +296,8 @@ def main():
                     balls.append(ball)
  
         updateBalls(balls, timeDelta)
+        cols = findCollisions(balls)
+        handleCollisions(balls, cols)
  
         screen.fill(BLACK)
  
