@@ -31,7 +31,7 @@ class Ball:
         self.collide = False
         self.redness = 255
         self.mass=100.0 #grams
-        self.ball_size = 0.1 # 0.5m
+        self.ball_size = random.randrange(1, 5) / 10.0 
         self.rect = pygame.Rect(0, 0, self.ball_size*2, self.ball_size*2)
         
     def initPos(self):
