@@ -55,7 +55,7 @@ class Ball:
     
     def initVel(self, maxEnergy):
         while True:
-            #everything is ,ultiplied by 100 as andrange takes ints only
+            #everything is multiplied by 100 as andrange takes ints only
             self.v.x = random.randrange(-200, 300, 1)/100.0
             self.v.y = self.randspeed(-300, 400, 1)/100.0
             self.energy = self.calcEnergy()
@@ -192,7 +192,7 @@ def updateBalls(balls, timeDelta):
             if ball.p.x < ball.ball_size:
                 ball.p.x += ball.ball_size - ball.p.x
 
-        # Fudge - make sure that the total energy of the ball doesn't change by scaling the velocity
+        # Fudge - make sure that the total energy of the ball doesn't change by scaling the vertical velocity
         newEnergy = ball.calcEnergy()
         ke = ball.ke()
         energyGain = newEnergy - ball.energy
@@ -200,8 +200,7 @@ def updateBalls(balls, timeDelta):
         if ke > 0.0: 
             mult = prevKE/ke
             if mult > 0.0000001:
-                mult = math.sqrt(mult)
-                ball.v.scale_ip(mult)
+                ball.v.y = ball.v.y * mult
         
 def findCollisions(balls):
     numballs = len(balls)
