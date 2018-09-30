@@ -18,7 +18,6 @@ g=Vector2(0.0,-9.81)
 max_energy=g.y*max_start_wheight*-1.0
 
 totalEnergy = 0.0 
-totalCalcEnergy = 0.0 
 
 class Ball:
     """
@@ -28,27 +27,25 @@ class Ball:
         self.p = Vector2(0.0, 0.0) # position in metres
         self.pb = Vector2(0.0, 0.0) # previous position in metres
         self.v = Vector2(0.0, 0.0) # velocity metres per second
+        self.energy=0.0  #joules
         self.collide = False
         self.redness = 255
-        self.density = 1000.0 #grams/m^2
-        self.ball_size = random.random()*0.1 + 0.05 #metres
-        self.mass = math.pi*self.ball_size*self.ball_size*self.density #grams
-        self.energy = self.calcEnergy() # joules
+        self.mass=100.0 #grams
+        self.ball_size = random.randrange(1, 5) / 10.0 
+        self.rect = pygame.Rect(0, 0, self.ball_size*2, self.ball_size*2)
         
     def initPos(self):
         self.p.x = random.randrange(int(self.ball_size), int(wwidth - self.ball_size))
         self.p.y = random.randrange(int(self.ball_size), int(max_start_wheight - self.ball_size))
         self.pb = self.p
-        self.energy = self.calcEnergy()
         
     def initPosXY(self, x, y):
         self.p.x = float(x)
         self.p.y = float(y)
         self.pb = self.p
-        self.energy = self.calcEnergy()
         
     def randspeed(self, lo, hi, step):
-        speed=0.0
+        speed=0.0;
         while speed==0.0:
             speed = random.randrange(lo, hi, step) # metres per second
         return speed
@@ -71,6 +68,8 @@ class Ball:
         self.pb = copy.deepcopy(self.p)
         v2 = self.v.scale(timeDelta)
         self.p.plus_ip(v2)
+        self.rect.x=self.p.x-self.ball_size;
+        self.rect.y=self.p.y-self.ball_size;
         
     def accelerate(self, delta, timeDelta):
         a2 = delta.scale(timeDelta)
@@ -81,27 +80,28 @@ class Ball:
         self.v.y *= float(f_y)
         
     def ke(self):
-        return 0.5 * self.mass * self.v.magSqr()
+        return 0.5 * self.v.magSqr()
  
     def pe(self):
-        return -1.0 * self.mass * g.y * self.p.y
+        return -1.0*g.y*self.p.y
         
     def calcEnergy(self):
         return self.pe() + self.ke()
     
+    def getRect(self):
+        return pygame.Rect(left, top, width, height)
+        
 def make_ball():
     """  
     Function to make a new, random ball.
     """
     global totalEnergy
-    global totalCalcEnergy
 
     ball = Ball()
     ball.initPos()
-    ball.initVel(max_energy*ball.mass)
+    ball.initVel(max_energy)
 
     totalEnergy += ball.energy
-    totalCalcEnergy += ball.energy
  
     return ball
 
@@ -110,22 +110,41 @@ def make_test_ball():
     Function to make a new, non-random ball.
     """
     global totalEnergy
-    global totalCalcEnergy
 
     ball = Ball()
     ball.initPosXY(1.0, 6.0)
     ball.initVelV(0.0, -1.0)
     totalEnergy += ball.energy
-    totalCalcEnergy += ball.energy
  
     return ball
 
 def calcCollision(p1, p2, v1, v2, m1, m2):
-    return Vector2.calcCollision(p1, p2, v1, v2, m1, m2)
+    p = p1.sub(p2)
+    un = p.unit()
+    ut = un.tangent()
+    
+    v1n = un.dot(v1)
+    v1t = ut.dot(v1)
+    v2n = un.dot(v2)
+    v2t = ut.dot(v2)
+    
+    v1ta = v1t
+    v2ta = v2t
+    v1na = ( v1n*(m1 - m2) + 2*m2*v2n ) / (m1 + m2)
+    v2na = ( v2n*(m2 - m1) + 2*m1 *v1n ) / (m1 + m2)
+    
+    v1nav = un.scale(v1na)
+    v1tav = ut.scale(v1ta)
+    v2nav = un.scale(v2na)
+    v2tav = ut.scale(v2ta)
+    
+    v1a = v1nav.plus(v1tav)
+    v2a = v2nav.plus(v2tav)
+    
+    return v1a, v2a
 
 def handleCollisions(balls, collisions):
     global totalEnergy
-    global totalCalcEnergy
 
     for i in collisions:
         j = collisions[i]
@@ -135,43 +154,37 @@ def handleCollisions(balls, collisions):
         balls[i].v = v1a   
         balls[j].v = v2a
 
-        eI = balls[i].calcEnergy()
-        eJ = balls[j].calcEnergy()
+        ballsEnergyAfter = balls[i].calcEnergy() +balls[j].calcEnergy()
 
-        energyGain = eI + eJ - ballsEnergyBefore
-        balls[i].energy = eI
-        balls[j].energy = eJ
-        if energyGain >= 0.0:
-            # take it from each ball's, pro-rata by their ke
-            ike = balls[i].ke()
-            totKe = ike+balls[j].ke()
-            if totKe > 0.0:
-                iGain = energyGain * ike / totKe
-                jGain = energyGain - iGain
+        # make sure the overall energy is not increasing
+        mult = ballsEnergyAfter/ballsEnergyBefore
+        if mult > 1.0:
+            mult -= 1.0
+            #mult /= 2.0
+            #mult = math.sqrt(mult)
+            mult *= mult
+            mult += 1.0
+        elif mult < 1.0:
+            mult = 1.0 - mult
+            #mult /= 2.0
+            #mult = math.sqrt(mult)
+            mult *= mult
+            mult = 1.0 - mult
+        mult = 1.0/mult
+        #balls[i].scaleV(1, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
+        #balls[j].scaleV(1, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
+        balls[i].scaleV(mult, mult) # is the sqrt necessary for a simple sim?
+        balls[j].scaleV(mult, mult) # is the sqrt necessary for a simple sim?
 
-                balls[i].energy -= iGain
-                balls[j].energy -= jGain
-
-                newIke = balls[i].ke()
-                oldIke = newIke - iGain
-                if newIke > 0.0 and oldIke >= 0.0:
-                    mult = math.sqrt(oldIke/newIke)
-                    balls[i].v.scale_ip(mult)
-
-                newJke = balls[j].ke()
-                oldJke = newJke - jGain
-                if newJke > 0.0 and oldJke >= 0.0:
-                    mult = math.sqrt(oldJke/newJke)
-                    balls[j].v.scale_ip(mult)
+        balls[i].energy = balls[i].calcEnergy()
+        balls[j].energy = balls[j].calcEnergy()
 
         totalEnergy -= ballsEnergyBefore
-        totalEnergy += balls[i].energy
-        totalEnergy += balls[j].energy
-        totalCalcEnergy -= ballsEnergyBefore
-        totalCalcEnergy += balls[i].calcEnergy()
-        totalCalcEnergy += balls[j].calcEnergy()
+        totalEnergy += balls[i].energy + balls[j].energy
 
 def updateBalls(balls, timeDelta):
+    cols = {}
+    revcols = {}
     for ball in balls:
         ball.collide = False
         ball.move(timeDelta)
@@ -192,6 +205,7 @@ def updateBalls(balls, timeDelta):
             if ball.p.x < ball.ball_size:
                 ball.p.x += ball.ball_size - ball.p.x
 
+<<<<<<< HEAD
         # Fudge - make sure that the total energy of the ball doesn't change by scaling the vertical velocity
         newEnergy = ball.calcEnergy()
         ke = ball.ke()
@@ -201,11 +215,13 @@ def updateBalls(balls, timeDelta):
             mult = prevKE/ke
             if mult > 0.0000001:
                 ball.v.y = ball.v.y * mult
+=======
+        # Fudge - make sure that the total energy of thw ball doesnt chnage by scaling the velocity
+        mult = ball.energy/ball.calcEnergy()
+        ball.scaleV(1.0, math.sqrt(mult)) # is the sqrt necessary for a simple sim?
+>>>>>>> eab9eefac7f76fefd5af96c112547d871122f4e4
         
-def findCollisions(balls):
     numballs = len(balls)
-    cols = {}
-    revcols = {}
     for i in range (0, numballs):
         if balls[i].p.x <= 0.0 or balls[i].p.x >= wwidth or balls[i].p.y <= 0.0 or balls[i].p.y >= ceiling:
             break # fudge - if the balls go outside the container then they never collide
@@ -227,7 +243,8 @@ def findCollisions(balls):
                         balls[i].redness = 0
                         balls[j].redness = 0
                         break
-    return cols
+                    
+    handleCollisions(balls, cols)
     
 def drawBalls(screen, balls, ppm, v_ceiling):
     for ball in balls:
@@ -245,7 +262,6 @@ def main():
     This is our main program.
     """
     global totalEnergy
-    global totalCalcEnergy
 
     pygame.init()
  
@@ -265,7 +281,6 @@ def main():
     clock = pygame.time.Clock() 
  
     totalEnergy = 0.0
-    totalCalcEnergy = 0.0
     balls = []
  
     ball = make_ball()
@@ -295,14 +310,12 @@ def main():
                     balls.append(ball)
  
         updateBalls(balls, timeDelta)
-        cols = findCollisions(balls)
-        handleCollisions(balls, cols)
  
         screen.fill(BLACK)
  
         drawBalls(screen, balls, pixels_per_metre, SCREEN_HEIGHT)
 
-        print(totalEnergy, totalCalcEnergy)
+        print(totalEnergy)
   
         clock.tick(fpa)
  
