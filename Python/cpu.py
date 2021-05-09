@@ -1,3 +1,9 @@
+'''
+
+An 8-bit CPU emulator
+
+'''
+
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 import tkinter.font
