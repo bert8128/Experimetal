@@ -6,7 +6,7 @@
 
         <script>
 
-        let sampleProgram =  `CpRI 2 4
+            let sampleProgram = `CpRI 2 4
 CpRI 1 .ret1
 Push 1 0
 Push 2 0
@@ -34,708 +34,913 @@ AddR 2 0
 .break
 Pop 0 0
 Push 2 0
-JmpR 0 0`
-                                ;
-        function toHex(num)
-        {
-            return num.toString(16).toUpperCase().padStart(2, "0");
-        }
-        function isHex(h)
-        {
-            var a = parseInt(h, 16);
-            return (a.toString(16) === h.toLowerCase());
-        }
-
-        let GRID_SIDE = 16;
-        let MEM_SIZE = GRID_SIDE*GRID_SIDE;
-
-        class Instruction
-        {
-            constructor(line, opcode, dest ,src)
+JmpR 0 0`;
+            function toHex(num)
             {
-                this.line = line
-                this.opcode = opcode
-                this.dest = dest
-                this.src = src
+                return num.toString(16).toUpperCase().padStart(2, "0");
             }
-            /*
-            def __repr__(self): 
-                return "%s %s %s %s" % (this.line, this.opcode, this.dest, this.src) 
-            
-            def __str__(self): 
-                return "%s %s %s %s" % (this.line, this.opcode, this.dest, this.src) 
-            */
-        }
-
-
-        class CPU
-        {
-            constructor()
+            function isHex(h)
             {
-                this.pc = 20;
-                this.sp = 30;
-                this.registers = [40, 50, 60]; // r0, r1 and r2
-                this.op = 0;
-                this.memory = []
-                for (let i=0; i<MEM_SIZE; i++)
-                {
-                    this.memory.push(i);
-                }
-                this.halted = false;
-                this.program = [];
-
-                this.instructions_table = [
-                  // opcode, mnemonic, dest, src
-                     [ 0x0,  'NoOp', '0', '0']
-                    ,[ 0x1,  'CpAI', 'a', 'v']
-                    ,[ 0x2,  'CpAR', 'a', 'r']
-                    ,[ 0x3,  'CpRA', 'r', 'a']
-                    ,[ 0x4,  'CpRI', 'r', 'v']
-                    ,[ 0x5,  'CpRR', 'r', 'r']
-                    ,[ 0x6,  'AddR', 'r', 'r']
-                    ,[ 0x7,  'SubR', 'r', 'r']
-                    ,[ 0x8,  'Jump', 'd', '0']
-                    ,[ 0x9,  'Jmpz', 'd', 'r']
-                    ,[ 0xA,  'Jmpn', 'd', 'r']
-                    ,[ 0xB,  'JmpR', 'r', '0']
-                    ,[ 0xC,  'And' , 'r', 'r']
-                    ,[ 0xD,  'Or'  , 'r', 'r']
-                    ,[ 0xE,  'Not' , 'r', '0']
-                    ,[ 0xF,  'Xor' , 'r', 'r']
-                    ,[ 0x10, 'Prnt', 'r', '0']
-                    ,[ 0x11, 'Push', 'r', '0']
-                    ,[ 0x12, 'Pop' , 'r', '0']
-                    ,[ 0xFF, 'Halt', '0', '0']
-                    ];
-                this.opcodes = [];
-                this.opcodes_to_machine_codes = {};
-                //for (var inx in this.instructions_table)
-                for (var inx of this.instructions_table)
-                {
-                    this.opcodes.push(inx[1]);
-                    this.opcodes_to_machine_codes[inx[1]] = inx[0];
-                }
-                this.instructions = [
-                                 'Allinstructions are three bytes:'
-                                ,'    Opcode, Destination, Source'
-                                ,'Operands types are:'
-                                ,'    A : Address'
-                                ,'    I : Immediate'
-                                ,'    R : Register (0, 1, 2)'
-                                ,'    0 : Unnecessary, ignored'
-                                ,'Addresses must be in hex'
-                                ];
-                for (var inx of this.instructions_table)
-                {
-                    //this.instructions.push( ' '.join([toHex(inx[0]), inx[1].ljust(4), inx[2], inx[3]]))
-                    this.instructions.push([toHex(inx[0]), inx[1], inx[2], inx[3]].join(' '));
-                }
+                var a = parseInt(h, 16);
+                var b = (a.toString(16).padStart(2, "0") === h.toLowerCase().padStart(2, "0"));
+                if (!b)
+                    console.log("isHex ", h, a, a.toString(16).padStart(2, "0"), h.toLowerCase().padStart(2, "0"));
+                return b;
             }
 
-            reset(program)
+            let GRID_SIDE = 16;
+            let MEM_SIZE = GRID_SIDE*GRID_SIDE;
+
+            class Instruction
             {
-                // program is a set of 3 byte instructions - it getes copied into the memory starting at 0
-                // all other memory is zeroed
-                this.halted = false;
-                this.pc = 0;
-                this.sp = 255;
-                this.op = 0;
-                this.registers = [0, 0, 0]; // r0, r1 and r2
-                for (let i=0; i<MEM_SIZE; i++)
-                    this.memory[i] = 0;
-                if (program.length >= MEM_SIZE-1)
-                    return;
-                for (let i=0; i<program.length; i++)
-                    this.memory[i] = program[i];
+                constructor(line, opcode, dest ,src)
+                {
+                    this.line = line
+                    this.opcode = opcode
+                    this.dest = dest
+                    this.src = src
+                }
+                /*
+                def __repr__(self): 
+                    return "%s %s %s %s" % (this.line, this.opcode, this.dest, this.src) 
+                
+                def __str__(self): 
+                    return "%s %s %s %s" % (this.line, this.opcode, this.dest, this.src) 
+                */
             }
 
-            assemble(program_text)
+
+            class CPU
             {
-                // Take text and return machine code Instructions
-                function get_just_the_code(source_lines)
+                constructor()
                 {
-                    var just_the_code = [];
+                    this.pc = 20;
+                    this.sp = 30;
+                    this.registers = [40, 50, 60]; // r0, r1 and r2
+                    this.op = 0;
+                    this.sp_changed = false;
+                    this.pc_changed = false;
+                    this.memory = []
+                    for (let i=0; i<MEM_SIZE; i++)
+                    {
+                        this.memory.push(i);
+                    }
+                    this.halted = false;
+                    this.program = [];
+
+                    this.instructions_table = [
+                    // opcode, mnemonic, dest, src
+                         [ 0x0,  'NoOp', '0', '0']
+                        ,[ 0x1,  'CpAI', 'a', 'i']
+                        ,[ 0x2,  'CpAR', 'a', 'r']
+                        ,[ 0x3,  'CpRA', 'r', 'a']
+                        ,[ 0x4,  'CpRI', 'r', 'i']
+                        ,[ 0x5,  'CpRR', 'r', 'r']
+                        ,[ 0x6,  'AddR', 'r', 'r']
+                        ,[ 0x7,  'SubR', 'r', 'r']
+                        ,[ 0x8,  'Jump', 'd', '0']
+                        ,[ 0x9,  'Jmpz', 'd', 'r']
+                        ,[ 0xA,  'Jmpn', 'd', 'r']
+                        ,[ 0xB,  'JmpR', 'r', '0']
+                        ,[ 0xC,  'And' , 'r', 'r']
+                        ,[ 0xD,  'Or'  , 'r', 'r']
+                        ,[ 0xE,  'Not' , 'r', '0']
+                        ,[ 0xF,  'Xor' , 'r', 'r']
+                        ,[ 0x10, 'Prnt', 'r', '0']
+                        ,[ 0x11, 'Push', 'r', '0']
+                        ,[ 0x12, 'Pop' , 'r', '0']
+                        ,[ 0xFF, 'Halt', '0', '0']
+                        ];
+                    this.opcodes = [];
+                    this.opcodes_to_machine_codes = {};
+                    for (var inx of this.instructions_table)
+                    {
+                        this.opcodes.push(inx[1]);
+                        this.opcodes_to_machine_codes[inx[1]] = inx[0];
+                    }
+                    this.instructions = [
+                                    'Allinstructions are three bytes:'
+                                    ,'    Opcode, Destination, Source'
+                                    ,'Operands types are:'
+                                    ,'    A : Address'
+                                    ,'    I : Immediate'
+                                    ,'    R : Register (0, 1, 2)'
+                                    ,'    0 : Unnecessary, ignored'
+                                    ,'Addresses must be in hex'
+                                    ];
+                    for (var inx of this.instructions_table)
+                    {
+                        this.instructions.push([toHex(inx[0]), inx[1].padEnd(4, ' '), inx[2], inx[3]].join(' '));
+                    }
+                }
+
+                reset(program)
+                {
+                    // program is a set of 3 byte instructions - it gets copied into the memory starting at 0
+                    // all other memory is zeroed
+                    this.halted = false;
+                    this.pc = 0;
+                    this.sp = 255;
+                    this.op = 0;
+                    this.registers = [0, 0, 0]; // r0, r1 and r2
+                    for (let i=0; i<MEM_SIZE; i++)
+                        this.memory[i] = 0;
+                    if (program.length >= MEM_SIZE-1)
+                        return;
+                    for (let i=0; i<program.length; i++)
+                        this.memory[i] = program[i];
+                }
+
+                assemble(program_text)
+                {
+                    // Take text and return machine code Instructions
+                    function get_just_the_code(source_lines)
+                    {
+                        var just_the_code = [];
+                        for (var source_line of source_lines)
+                        {
+                            var source_line = source_line.trim();
+                            if (source_line.length == 0)
+                                continue;
+                            var tokens = source_line.split(" ");
+                            if (tokens.length == 0)
+                                continue;
+                            if (tokens[0][0] == '#')
+                                continue;
+                            just_the_code.push(source_line)
+                        }
+                        // make sure that the program terminates with a halt in case of 
+                        // labels at the end
+                        if (just_the_code.length > 0)
+                        {
+                            if (!just_the_code[just_the_code.length - 1].includes('Halt'))
+                                just_the_code.push('Halt 0 0');
+                        }
+                        return just_the_code;
+                    }
+                    function get_lines_with_line_numbers(source_lines)
+                    {
+                        // returns a list of number/line pairs, with no line numbers of the labels 
+                        var source_with_line_numbers = [];
+                        var line_number = 0;
+                        for (var source_line of source_lines)
+                        {
+                            if (source_line[0] == '.')
+                            {
+                                source_with_line_numbers.push([-1, source_line]);
+                            }
+                            else
+                            {
+                                source_with_line_numbers.push([line_number, source_line]);
+                                line_number += 1;
+                            }
+                        }
+                        return source_with_line_numbers;
+                    }
+
+                    if (program_text.length == 0)
+                        return [true, ''];
+
+                    var source_lines = program_text.split('\n');
+                    if (source_lines.length == 0)
+                        return [true, ''];
+                    
+                    var source_lines = get_just_the_code(source_lines);
+                    // everything now is an instruction or a label
+                    // allocate a source line to everything that is not a label, 
+                    // and give the label the address of the next source line
+                    var source_with_line_numbers = get_lines_with_line_numbers(source_lines);
+
+                    // now read up from the end, finding the effective line number for each label
+                    var labels = {};
+                    var current_line = -1;
+                    //return [true, source_with_line_numbers[0][1]];
+                    for (var i = source_with_line_numbers.length - 1; i >= 0; i--)
+                    {
+                        var item = source_with_line_numbers[i];
+                        if (item[0] == -1)
+                        {
+                            label = item[1];
+                            if (label in labels)
+                                return [false, 'Repeated label ' + label];
+                            labels[label] = current_line;
+                        }
+                        else
+                        {
+                            current_line = item[0];
+                        }
+                    }
+                    console.log(labels);
+
+                    // the code with no labels, held as objects, with the jumps pointing to line numbers, not labels
+                    var machine_code = []
+
+                    for (var x of source_with_line_numbers)
+                    {
+                        var line_number = x[0];
+                        var code = x[1];
+
+                        if (code[0] == '.')
+                            continue;
+                        var tokens = code.split(' ');
+                        if (tokens.length != 3)
+                            return [false, 'Invalid number of tokens, line ' + line_number.toString()];
+                        if (!this.opcodes.includes(tokens[0]))
+                            return (false, 'Invalid opcode ' + tokens[0] + ' on line ' + line_number.toString())
+
+                        var opcode = tokens[0]
+
+                        for (var tok = 1; tok<3; ++tok)
+                        {
+                            if (tokens[tok][0] == '.')
+                            {
+                                var label = tokens[tok];
+                                if (!(label in labels))
+                                    return [false, 'Unknown label ' + label + ' on line ' + line_number.toString()];
+                                var num = labels[label] * 3;
+                                tokens[tok] = toHex(num);
+                            }
+                        }
+                        // jump is special as it uses labels, not numbers
+                        for (var tok = 1; tok < 3; ++tok)
+                        {
+                            if (!isHex(tokens[tok]))
+                            {
+                                return [false, 'Invalid non-numeric operand ' + tokens[tok] + ' on line ' + line_number.toString()];
+                            }
+                        }
+
+                        var dest = parseInt(tokens[1], 16);
+                        var src = parseInt(tokens[2], 16);
+                        var instr = new Instruction(line_number, opcode, dest, src);
+                        machine_code.push(instr);
+                    }
+
+                    var mc = [];
+                    for (var line_number=0;  line_number < machine_code.length; line_number++)
+                    {
+                        var instruction = machine_code[line_number]
+                        mc.push(this.opcodes_to_machine_codes[instruction.opcode]);
+                        mc.push(instruction.dest);
+                        mc.push(instruction.src);
+                    }
+                    return [true, mc];
+                }
+
+                noop(operand1, operand2)
+                {
+                    this.pc += 3;
+                    return [[], []];
+                }
+
+                cpai(operand1, operand2)
+                {
+                    this.pc += 3;
+                    this.memory[operand1] = operand2;
+                    return [[], [operand1]];
+                }
+
+                cpar(operand1, operand2)
+                {
+                    this.pc += 3;
+                    if (operand2 < 0 || operand2 > 2)
+                        return [[], []];
+                    this.memory[operand1] = this.registers[operand2];
+                    return [[], [operand1]];
+                }
+
+                cpra(operand1, operand2)
+                {
+                    this.pc += 3;
+                    if (operand1 < 0 || operand1 > 2)
+                        return [[], []];
+                    this.registers[operand1] = this.memory[operand2];
+                    return [[operand1]], [[]];
+                }
+
+                cpri(operand1, operand2)
+                {
+                    this.pc += 3;
+                    if (operand1 < 0 || operand1 > 2)
+                        return [[], []];
+                    this.registers[operand1] = operand2;
+                    return [[operand1], []];
+                }
+
+                cprr(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2) || (operand1 == operand2))
+                        return [[], []];
+
+                    this.registers[operand1] = this.registers[operand2];
+                    return [[operand1], []];
+                }
+
+                addr(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
+                        return [[], []];
+
+                    this.registers[operand1] += this.registers[operand2];
+                    if (this.registers[operand1] > 255)
+                        this.registers[operand1] = this.registers[operand1] - 255;
+                    return [[operand1], []];
+                }
+
+                subr(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
+                        return [[], []];
+
+                    this.registers[operand1] -= this.registers[operand2]
+                    return [[operand1], []];
+                }
+
+                jump(operand1, operand2)
+                {
+                    this.pc = operand1;
+                    return [[], []];
+                }
+
+                jmpz(operand1, operand2)
+                {
+                    if (operand2 < 0 || operand2 > 2)
+                    {
+                        this.pc += 3;
+                        return [[], []];
+                    }
+
+                    if (this.registers[operand2] == 0)
+                    {
+                        this.pc = operand1;
+                        return [[], []];
+                    }
+
+                    this.pc += 3;
+                    return [[], []];
+                }
+
+                jmpn(operand1, operand2)
+                {
+                    if (operand2 < 0 || operand2 > 2)
+                    {
+                        this.pc += 3;
+                        return [[], []];
+                    }
+
+                    if (this.registers[operand2] != 0)
+                    {
+                        this.pc = operand1;
+                        return [[], []];
+                    }
+
+                    this.pc += 3;
+                    return [[], []];
+                }
+
+                jmpr(operand1, operand2)
+                {
+                    if (operand1 < 0 || operand1 > 2)
+                    {
+                        this.pc += 3;
+                        return [[], []];
+                    }
+
+                    this.pc = this.registers[operand1];
+                    return [[], []];
+                }
+
+                andd(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
+                        return [[], []];
+
+                    this.registers[operand1] &= this.registers[operand2];
+                    return [[operand1], []];
+                }
+
+                orr(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
+                        return [[], []];
+
+                    this.registers[operand1] |= this.registers[operand2];
+                    return [[operand1], []];
+                }
+
+                nott(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if (operand1 < 0 || operand1 > 2)
+                        return [[], []];
+
+                    this.registers[operand1] = ~this.registers[operand1];
+                    return [[operand1], []];
+                }
+
+                xor(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
+                        return [[], []];
+
+                    this.registers[operand1] ^= this.registers[operand2];
+                    return [[operand1], []];
+                }
+
+                prnt(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if (operand1 < 0 || operand1 > 2)
+                        return [[], []];
+
+                    this.op = this.registers[operand1];
+                    return [[-1], []];
+                }
+
+                push(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if (operand1 < 0 || operand1 > 2)
+                        return [[], []];
+
+                    this.memory[this.sp] = this.registers[operand1];
+                    this.sp -= 1;
+                    return [[], [this.sp]];
+                }
+
+                pop(operand1, operand2)
+                {
+                    this.pc += 3;
+
+                    if (operand1 < 0 || operand1 > 2)
+                        return [[], []];
+
+                    this.sp += 1;
+                    this.registers[operand1] = this.memory[this.sp];
+                    return [[operand1], []];
+                }
+
+                halt(operand1, operand2)
+                {
+                    this.halted = true;
+                    return [[], []];
+                }
+
+                step()
+                {
+                    // returns a list of changed registers (not including sp or pc) (output is -1) and a list of changed memory locations 
+                    if (this.halted)
+                        return [];
+                    var opcode   = this.memory[this.pc+0];
+                    var operand1 = this.memory[this.pc+1];
+                    var operand2 = this.memory[this.pc+2];
+                    var changes = [];
+                    let old_sp = this.sp;
+                    let old_pc = this.pc;
+                    this.sp_changed = false;
+                    this.pc_changed = false;
+
+                    if      (opcode == 0x0 ) changes = this.noop(operand1, operand2);
+                    else if (opcode == 0x1 ) changes = this.cpai(operand1, operand2);
+                    else if (opcode == 0x2 ) changes = this.cpar(operand1, operand2);
+                    else if (opcode == 0x3 ) changes = this.cpra(operand1, operand2);
+                    else if (opcode == 0x4 ) changes = this.cpri(operand1, operand2);
+                    else if (opcode == 0x5 ) changes = this.cprr(operand1, operand2);
+                    else if (opcode == 0x6 ) changes = this.addr(operand1, operand2);
+                    else if (opcode == 0x7 ) changes = this.subr(operand1, operand2);
+                    else if (opcode == 0x8 ) changes = this.jump(operand1, operand2);
+                    else if (opcode == 0x9 ) changes = this.jmpz(operand1, operand2);
+                    else if (opcode == 0xA ) changes = this.jmpn(operand1, operand2);
+                    else if (opcode == 0xB ) changes = this.jmpr(operand1, operand2);
+                    else if (opcode == 0xC ) changes = this.andd(operand1, operand2);
+                    else if (opcode == 0xD ) changes = this.orr (operand1, operand2);
+                    else if (opcode == 0xE ) changes = this.nott(operand1, operand2);
+                    else if (opcode == 0xF ) changes = this.xor (operand1, operand2);
+                    else if (opcode == 0x10) changes = this.prnt(operand1, operand2);
+                    else if (opcode == 0x11) changes = this.push(operand1, operand2);
+                    else if (opcode == 0x12) changes = this.pop (operand1, operand2);
+                    else if (opcode == 0xFF) changes = this.halt(operand1, operand2);
+
+                    console.log(opcode);
+                    
+                    if (old_sp != this.sp)
+                        this.sp_changed = true;
+                    if (old_pc != this.pc)
+                        this.pc_changed = true;
+
+                    return changes;
+                }
+            }
+
+            class Renderer 
+            {
+                constructor(content, scale, acpu) 
+                {
+                    this.cpu = acpu;
+                    
+                    content.style.fontFamily = "Courier New";
+
+                    this.pc;
+                    this.sp;
+                    this.op = [];
+                    this.registers = [];
+
+                    //decode
+                    {
+                        var divDecode = document.createElement('div');
+                        divDecode.id = 'decodediv';
+                        divDecode.style.float = "left";
+                        content.appendChild(divDecode);
+                        this.decode = document.createElement('textarea');
+                        this.decode.id = 'decode';
+                        this.decode.rows = "35";
+                        this.decode.style.width = "35ch";
+                        this.decode.innerHTML = this.cpu.instructions.join('\n');
+                        divDecode.appendChild(this.decode);
+                    }
+                    //code
+                    {
+                        var divCode = document.createElement('div');
+                        divCode.id = 'codediv';
+                        divCode.style.float = "left";
+                        content.appendChild(divCode);
+                        this.code = document.createElement('textarea');
+                        this.code.id = 'code';
+                        this.code.rows = "35";
+                        this.code.style.width = "25ch";
+                        this.code.innerHTML = sampleProgram;
+                        divCode.appendChild(this.code);
+                    }
+
+                    var divRegAndMem = document.createElement('div');
+                    divCode.id = 'regAndMem';
+                    divRegAndMem.style.width = "fit-content";
+                    divRegAndMem.style.border = "2px solid #d3d3d3";
+                    divRegAndMem.style.float = "left";
+                    content.appendChild(divRegAndMem);
+
+                    //divRegAndMem
+                    {
+                        // REGISTERS
+                        {
+                            var divRegisters = document.createElement('div');
+                            divRegisters.style.border = "1px solid #d3d3d3";
+                            divRegisters.style.margin = "5px 5px 5px 5px";
+                            divRegAndMem.appendChild(divRegisters);
+
+                            let registerTable = document.createElement("table");
+                            registerTable.style = "text-align:center";
+                            registerTable.style.border = "1px solid #d3d3d3";
+                            registerTable.style.width = "100%";
+                            divRegisters.appendChild(registerTable);
+
+                            let createRegisterCell = (row, content) =>
+                            {
+                                let cell = row.insertCell();
+                                cell.style.border = "1px solid #d3d3d3";
+                                let text = document.createTextNode(content);
+                                cell.appendChild(text);
+                                return cell;
+                            };
+                            {
+                                let row = registerTable.insertRow();
+                                row.style.border = "1px solid #d3d3d3";
+
+                                this.pc = createRegisterCell(row, "00");
+                                this.sp = createRegisterCell(row, "00");
+                                this.registers.push(createRegisterCell(row, "00"));
+                                this.registers.push(createRegisterCell(row, "00"));
+                                this.registers.push(createRegisterCell(row, "00"));
+                            }
+                            {
+                                let thead = registerTable.createTHead();
+                                let row = thead.insertRow();
+                                row.style.border = "1px solid #d3d3d3";
+                                for (let key of [ "PC", "SP", "R0", "R1", "R2" ])
+                                {
+                                    let th = document.createElement("th");
+                                    th.style.border = "1px solid #d3d3d3";
+                                    let text = document.createTextNode(key);
+                                    th.appendChild(text);
+                                    row.appendChild(th);
+                                }
+                            }
+                        }
+                        // MEMORY
+                        {
+                            var divMemory = document.createElement('div');
+                            divMemory.id = 'memory';
+                            divMemory.style.border = "1px solid #d3d3d3";
+                            divMemory.style.margin = "5px 5px 5px 5px";
+                            divMemory.style.width = (17*3) + "ch";
+                            divRegAndMem.appendChild(divMemory);
+                            this.memoryCells = [];
+                            for (let row=0; row<GRID_SIDE+1; ++row)
+                            {
+                                var divMemoryRow = document.createElement('div');
+                                divMemory.appendChild(divMemoryRow);
+                                divMemoryRow.style.width = "100%";
+                                for (let col=0; col<GRID_SIDE+1; ++col)
+                                {
+                                    var divMemoryCell = document.createElement('div');
+                                    //divMemoryCell.style.border = "1px solid #d3d3d3";
+                                    divMemoryCell.style.display= "inline-block";
+                                    divMemoryCell.style.margin = "3px 4px 3px 4px";
+                                    divMemoryRow.appendChild(divMemoryCell);
+                                    if (row == 0 || col == 0)
+                                    {
+                                        divMemoryCell.style.fontStyle = "italic";
+                                        divMemoryCell.style.width = 2 + "ch";
+                                        if (row == 0 && col > 0)
+                                            divMemoryCell.innerHTML = toHex(col-1) + " ";
+                                        else if (row > 0 && col == 0)
+                                            divMemoryCell.innerHTML = toHex(row-1) + " ";
+                                    }
+                                    else
+                                    {
+                                        this.memoryCells.push(divMemoryCell);
+                                    }
+                                }
+                            }
+                        }
+                        {
+                            this.ouput = document.createElement('textarea');
+                            this.ouput.id = 'output';
+                            this.ouput.rows = "5";
+                            this.ouput.style.width = "97%";
+                            this.ouput.style.margin = "5px 5px 5px 5px";
+                            //this.ouput.style.border = "1px solid #d3d3d3";
+                            this.ouput.innerHTML = '';
+                            divRegAndMem.appendChild(this.ouput);
+                        }
+                    }
+                    this.prev_pc = 0;
+                    this.prev_sp = 0;
+                    this.default_fg = window.getComputedStyle(this.memoryCells[0], null).getPropertyValue("color");
+                    this.default_bg = window.getComputedStyle(this.memoryCells[0], null).getPropertyValue("background-color");
+                }
+
+                set()
+                {
+                    this.pc.innerHTML = toHex(this.cpu.pc);
+                    this.sp.innerHTML = toHex(this.cpu.sp);
+                    for (let i=0; i<this.registers.length; i++)
+                        this.registers[i].innerHTML = toHex(this.cpu.registers[i]);
+
+                    for (let i=0; i<MEM_SIZE; ++i)
+                        this.memoryCells[i].innerHTML = toHex(this.cpu.memory[i]) + " ";
+                }
+
+                reset()
+                {
+                    var listing = this.cpu.assemble(this.code.value);
+                    var rc = listing[0];
+                    if (!rc)
+                        console.log(listing[1]);
+                    var code = listing[1];
+                    this.cpu.reset(code);
+                    this.set();
+                    let programWithLineNos = "";
+
+                    var the_code = [];
+                    var source_lines = this.code.value.split('\n');
+                    let line_no = 0;
                     for (var source_line of source_lines)
                     {
                         var source_line = source_line.trim();
                         if (source_line.length == 0)
                             continue;
-                        var tokens = source_line.split(" ");
-                        if (tokens.length == 0)
+                        if (source_line[0] == '#')
                             continue;
-                        if (tokens[0][0] == '#')
-                            continue;
-                        just_the_code.push(source_line)
-                    }
-                    // make sure that the program terminates with a halt in case of 
-                    // labels at the end
-                    if (just_the_code.length > 0)
-                    {
-                        if (!just_the_code[just_the_code.length - 1].includes('Halt'))
-                            just_the_code.push('Halt 0 0');
-                    }
-                    return just_the_code;
-                }
-                function get_lines_with_line_numbers(source_lines)
-                {
-                    // returns a list of number/line pairs, with no line numbers of the labels '''
-                    var source_with_line_numbers = [];
-                    var line_number = 0;
-                    for (var source_line of source_lines)
-                    {
                         if (source_line[0] == '.')
-                            source_with_line_numbers.push([-1, source_line]);
+                            source_line = "  " + source_line;
                         else
-                            source_with_line_numbers.push([line_number, source_line]);
-                            line_number += 1;
-                    }
-                    return source_with_line_numbers;
-                }
-
-                if (program_text.length == 0)
-                    return [true, ''];
-
-                var source_lines = program_text.split('\n');
-                if (source_lines.length == 0)
-                    return [true, ''];
-                
-                var source_lines = get_just_the_code(source_lines);
-                // everything now is an instruction or a label
-                // allocation a source line to everything that is not a label, 
-                // and give the label the address of the next source line
-                var source_with_line_numbers = get_lines_with_line_numbers(source_lines);
-
-                // now read up from the end, finding the effective line number for each label
-                var labels = {};
-                var current_line = -1;
-                //return [true, source_with_line_numbers[0][1]];
-                for (var i = source_with_line_numbers.length - 1; i >= 0; i--)
-                {
-                    var item = source_with_line_numbers[i];
-                    if (item[0] == -1)
-                    {
-                        label = item[1];
-                        if (label in labels)
-                            return [false, 'Repeated label ' + label];
-                        labels[label] = current_line;
-                    }
-                    else
-                    {
-                        current_line = item[0];
-                    }
-                }
-
-                // the code with no labels, held as objects, with the jumps pointing to line numbers, not labels
-                var machine_code = []
-
-                for (var x of source_with_line_numbers)
-                {
-                    var line_number = x[0];
-                    var code = x[1];
-
-                    if (code[0] == '.')
-                        continue;
-                    var tokens = code.split(' ');
-                    if (tokens.length != 3)
-                        return [false, 'Invalid number of tokens, line ' + line_number.toString()];
-                    if (!this.opcodes.includes(tokens[0]))
-                        return (false, 'Invalid opcode ' + tokens[0] + ' on line ' + line_number.toString())
-
-                    var opcode = tokens[0]
-
-                    for (var tok = 1; tok<3; ++tok)
-                    {
-                        if (tokens[tok][0] == '.')
                         {
-                            var label = tokens[tok];
-                            if (!(label in labels))
-                                return [false, 'Unknown label ' + label + ' on line ' + line_number.toString()];
-                            var num = labels[label] * 3;
-                            tokens[tok] = toHex(num);
+                            source_line = toHex(line_no*3) + ' ' + source_line;
+                            line_no += 1;
+                        }
+                        the_code.push(source_line)
+                    }
+                    this.code.innerHTML = the_code.join('\n');
+                    this.colour_cells(true, null);
+                }
+
+                colour_cells(reset, changed_addresses=[])
+                {
+                    this.memoryCells[this.prev_pc].style.backgroundColor = this.default_bg;
+                    this.memoryCells[this.prev_sp].style.backgroundColor = this.default_bg;
+
+                    this.memoryCells[this.cpu.pc].style.backgroundColor = "magenta";
+                    this.memoryCells[this.cpu.sp].style.backgroundColor = "cyan";
+
+                    this.prev_pc = this.cpu.pc;
+                    this.prev_sp = this.cpu.sp;
+
+                    /*var cells = this.memoryCells;
+                    for (cell in cells)
+                    {
+                        if (this.emulator.pc <= cell.address && cell.address < this.emulator.pc+3)
+                        {
+                            cell.box.configure(bg = this.greens[-1]);
+                            cell.r = 0;
+                            cell.g = len(this.greens)-1;
+                            cell.b = 0;
+                        }
+                        else if (this.emulator.sp == cell.address)
+                        {
+                            cell.box.configure(bg = this.blues[-1]);
+                            cell.r = 0;
+                            cell.g = 0;
+                            cell.b = len(this.blues)-1;
+                        }
+                        else if (changed_addresses && cell.address in changed_addresses)
+                        {
+                            cell.box.configure(bg = this.reds[-1]);
+                            cell.r = len(this.reds)-1;
+                            cell.g = 0;
+                            cell.b = 0;
+                        }
+                        else if (reset)
+                        {
+                            cell.box.configure(bg = this.default_bg);
+                            cell.r = 0;
+                            cell.g = 0;
+                            cell.b = 0;
+                        }
+                        else
+                        {
+                            var was = false;
+                            var will = false;
+                            var colour = -1;
+                            if (cell.r > 0)
+                            {
+                                was = true;
+                                cell.r -= 1;
+                            }
+                            else if (cell.g > 0)
+                            {
+                                was = true;
+                                cell.g -= 1;
+                            }
+                            else if (cell.b > 0)
+                            {
+                                was = true
+                                cell.b -= 1;
+                            }
+                            if (cell.r > 0)
+                            {
+                                will = true;
+                                colour = this.reds[cell.r];
+                            }
+                            else if (cell.g > 0)
+                            {
+                                will = true;
+                                colour = this.greens[cell.g];
+                            }
+                            else if (cell.b > 0)
+                            {
+                                will = true;
+                                colour = this.blues[cell.b];
+                            }
+                            if (was && will)
+                                cell.box.configure(bg = colour);
+                            else if (!was && will)
+                                cell.box.configure(bg = colour);
+                            else if (was && !will)
+                                cell.box.configure(bg = this.default_bg);
                         }
                     }
-                    // jump is special as it uses labels, not numbers
-                    for (var tok = 1; tok < 3; ++tok)
-                    {
-                        if (!isHex(tokens[tok]))
-                        {
-                            return [false, 'Invalid non-numeric operand ' + tokens[tok] + ' on line ' + line_number.toString()];
-                        }
-                    }
-
-                    var dest = parseInt(tokens[1], 16);
-                    var src = parseInt(tokens[2], 16);
-                    machine_code.push(new Instruction(line_number, opcode, dest, src));
-                }
-
-                //return [true, machine_code];
-                var mc = [];
-                for (var line_number=0;  line_number < machine_code.length; line_number++)
-                {
-                    var instruction = machine_code[line_number]
-                    mc.push(this.opcodes_to_machine_codes[instruction.opcode]);
-                    mc.push(instruction.dest);
-                    mc.push(instruction.src);
-                }
-                return [true, mc];
-            }
-
-            noop(operand1, operand2)
-            {
-                this.pc += 3;
-                return [[], []];
-            }
-
-            cpai(operand1, operand2)
-            {
-                this.pc += 3;
-                this.memory[operand1] = operand2;
-                return [[], [operand1]];
-            }
-
-            cpar(operand1, operand2)
-            {
-                this.pc += 3;
-                if (operand2 < 0 || operand2 > 2)
-                    return [[], []];
-                this.memory[operand1] = this.registers[operand2];
-                return [[], [operand1]];
-            }
-
-            cpra(operand1, operand2)
-            {
-                this.pc += 3;
-                if (operand1 < 0 || operand1 > 2)
-                    return [[], []];
-                this.registers[operand1] = this.memory[operand2];
-                return [[operand1]], [[]];
-            }
-
-            cpri(operand1, operand2)
-            {
-                this.pc += 3;
-                if (operand1 < 0 || operand1 > 2)
-                    return [[], []];
-                this.registers[operand1] = operand2;
-                return [[operand1], []];
-            }
-
-            cprr(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2) || (operand1 == operand2))
-                    return [[], []];
-
-                this.registers[operand1] = this.registers[operand2];
-                return [[operand1], []];
-            }
-
-            addr(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
-                    return [[], []];
-
-                this.registers[operand1] += this.registers[operand2];
-                if (this.registers[operand1] > 255)
-                    this.registers[operand1] = this.registers[operand1] - 255;
-                return [[operand1], []];
-            }
-
-            subr(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
-                    return [[], []];
-
-                this.registers[operand1] -= this.registers[operand2]
-                return [[operand1], []];
-            }
-
-            jump(operand1, operand2)
-            {
-                this.pc = operand1;
-                return [[], []];
-            }
-
-            jmpz(operand1, operand2)
-            {
-                if (operand2 < 0 || operand2 > 2)
-                {
-                    this.pc += 3;
-                    return [[], []];
-                }
-
-                if (this.registers[operand2] == 0)
-                {
-                    this.pc = operand1;
-                    return [[], []];
-                }
-
-                this.pc += 3;
-                return [[], []];
-            }
-
-            jmpn(operand1, operand2)
-            {
-                if (operand2 < 0 || operand2 > 2)
-                {
-                    this.pc += 3;
-                    return [[], []];
-                }
-
-                if (this.registers[operand2] != 0)
-                {
-                    this.pc = operand1;
-                    return [[], []];
-                }
-
-                this.pc += 3;
-                return [[], []];
-            }
-
-            jmpr(operand1, operand2)
-            {
-                if (operand1 < 0 || operand1 > 2)
-                {
-                    this.pc += 3;
-                    return [[], []];
-                }
-
-                this.pc = this.registers[operand1];
-                return [[], []];
-            }
-
-            andd(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
-                    return [[], []];
-
-                this.registers[operand1] &= this.registers[operand2];
-                return [[operand1], []];
-            }
-
-            orr(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
-                    return [[], []];
-
-                this.registers[operand1] |= this.registers[operand2];
-                return [[operand1], []];
-            }
-
-            nott(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if (operand1 < 0 || operand1 > 2)
-                    return [[], []];
-
-                this.registers[operand1] = ~this.registers[operand1];
-                return [[operand1], []];
-            }
-
-            xor(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if ((operand1 < 0 || operand1 > 2) || (operand2 < 0 || operand2 > 2))
-                    return [[], []];
-
-                this.registers[operand1] ^= this.registers[operand2];
-                return [[operand1], []];
-            }
-
-            prnt(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if (operand1 < 0 || operand1 > 2)
-                    return [[], []];
-
-                this.op = this.registers[operand1];
-                return [[-1], []];
-            }
-
-            push(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if (operand1 < 0 || operand1 > 2)
-                    return [[], []];
-
-                this.memory[this.sp] = this.registers[operand1];
-                this.sp -= 1;
-                return [[], [this.sp]];
-            }
-
-            pop(operand1, operand2)
-            {
-                this.pc += 3;
-
-                if (operand1 < 0 || operand1 > 2)
-                    return [[], []];
-
-                this.sp += 1;
-                this.registers[operand1] = this.memory[this.sp];
-                return [[operand1], []];
-            }
-
-            halt(operand1, operand2)
-            {
-                this.halted = true;
-                return [[], []];
-            }
-
-            step()
-            {
-                // returns a list ofchanged registers (not including sp or pc) and a list of changed memory locations 
-                if (this.halted)
-                    return None;
-                opcode   = this.memory[this.pc];
-                operand1 = this.memory[this.pc+1];
-                operand2 = this.memory[this.pc+2];
-                changes = [];
-                if      (opcode == 0x0 ) changes = this.noop(operand1, operand2);
-                else if (opcode == 0x1 ) changes = this.cpai(operand1, operand2);
-                else if (opcode == 0x2 ) changes = this.cpar(operand1, operand2);
-                else if (opcode == 0x3 ) changes = this.cpra(operand1, operand2);
-                else if (opcode == 0x4 ) changes = this.cpri(operand1, operand2);
-                else if (opcode == 0x5 ) changes = this.cprr(operand1, operand2);
-                else if (opcode == 0x6 ) changes = this.addr(operand1, operand2);
-                else if (opcode == 0x7 ) changes = this.subr(operand1, operand2);
-                else if (opcode == 0x8 ) changes = this.jump(operand1, operand2);
-                else if (opcode == 0x9 ) changes = this.jmpz(operand1, operand2);
-                else if (opcode == 0xA ) changes = this.jmpn(operand1, operand2);
-                else if (opcode == 0xB ) changes = this.jmpr(operand1, operand2);
-                else if (opcode == 0xC ) changes = this.andd(operand1, operand2);
-                else if (opcode == 0xD ) changes = this.orr (operand1, operand2);
-                else if (opcode == 0xE ) changes = this.nott(operand1, operand2);
-                else if (opcode == 0xF ) changes = this.xor (operand1, operand2);
-                else if (opcode == 0x10) changes = this.prnt(operand1, operand2);
-                else if (opcode == 0x11) changes = this.push(operand1, operand2);
-                else if (opcode == 0x12) changes = this.pop (operand1, operand2);
-                else if (opcode == 0xFF) changes = this.halt(operand1, operand2);
-                
-                return changes
-            }
-        }
-
-        class Renderer 
-        {
-            constructor(content, scale, acpu) 
-            {
-                this.cpu = acpu;
-                
-                content.style.fontFamily = "Courier New";
-
-                this.pc;
-                this.sp;
-                this.registers = [];
-
-                //code
-                {
-                    var divCode = document.createElement('div');
-                    divCode.id = 'codediv';
-                    divCode.style.float = "left";
-                    content.appendChild(divCode);
-                    /*
-                        <textarea id="sourceCode"
-                        class="form-control source-code"
-                        style="margin-bottom:5px;"
-                        tab-support
-                        select-line
-                        ng-model="code"></textarea>
                     */
-                    this.code = document.createElement('textarea');
-                    this.code.id = 'code';
-                    this.code.rows = "35";
-                    this.code.style.width = (16*3) + "ch";
-                    this.code.innerHTML = sampleProgram;
-                    divCode.appendChild(this.code);
                 }
 
-                var divRegAndMem = document.createElement('div');
-                divCode.id = 'regAndMem';
-                divRegAndMem.style.width = "fit-content";
-                divRegAndMem.style.border = "2px solid #d3d3d3";
-                divRegAndMem.style.float = "left";
-                content.appendChild(divRegAndMem);
-
-                //divRegAndMem
+                step()
                 {
-                    // REGISTERS
+                    var changes = this.cpu.step();
+                    if (changes)
                     {
-                        var divRegisters = document.createElement('div');
-                        divRegisters.style.border = "1px solid #d3d3d3";
-                        divRegisters.style.margin = "5px 5px 5px 5px";
-                        divRegAndMem.appendChild(divRegisters);
-
-                        let registerTable = document.createElement("table");
-                        registerTable.style = "text-align:center";
-                        registerTable.style.border = "1px solid #d3d3d3";
-                        registerTable.style.width = "100%";
-                        divRegisters.appendChild(registerTable);
-
-                        let createRegisterCell = (row, content) =>
+                        this.set();
+                        var regs = changes[0];
+                        if (regs)
                         {
-                            let cell = row.insertCell();
-                            cell.style.border = "1px solid #d3d3d3";
-                            let text = document.createTextNode(content);
-                            cell.appendChild(text);
-                            return cell;
-                        };
-                        {
-                            let row = registerTable.insertRow();
-                            row.style.border = "1px solid #d3d3d3";
-
-                            this.pc = createRegisterCell(row, "00");
-                            this.sp = createRegisterCell(row, "00");
-                            this.registers.push(createRegisterCell(row, "00"));
-                            this.registers.push(createRegisterCell(row, "00"));
-                            this.registers.push(createRegisterCell(row, "00"));
-                        }
-                        {
-                            let thead = registerTable.createTHead();
-                            let row = thead.insertRow();
-                            row.style.border = "1px solid #d3d3d3";
-                            for (let key of [ "PC", "SP", "R0", "R1", "R2" ])
+                            for (let i = 0; i<this.registers.length; i++)
                             {
-                                let th = document.createElement("th");
-                                th.style.border = "1px solid #d3d3d3";
-                                let text = document.createTextNode(key);
-                                th.appendChild(text);
-                                row.appendChild(th);
+                                if (regs[0] == i)
+                                    this.registers[i].style.backgroundColor = "yellow";
+                                else
+                                    this.registers[i].style.backgroundColor = this.default_bg;
                             }
-                        }
-                    }
-                    // MEMORY
-                    {
-                        var divMemory = document.createElement('div');
-                        divMemory.id = 'memory';
-                        divMemory.style.border = "1px solid #d3d3d3";
-                        divMemory.style.margin = "5px 5px 5px 5px";
-                        divMemory.style.width = (16*3) + "ch";
-                        divRegAndMem.appendChild(divMemory);
-                        this.memoryCells = [];
-                        for (let row=0; row<GRID_SIDE; ++row)
-                        {
-                            var divMemoryRow = document.createElement('div');
-                            divMemory.appendChild(divMemoryRow);
-                            divMemoryRow.style.width = "100%";
-                            for (let col=0; col<GRID_SIDE; ++col)
+                            if (regs[0] == -1)
                             {
-                                var divMemoryCell = document.createElement('div');
-                                //divMemoryCell.style.border = "1px solid #d3d3d3";
-                                divMemoryCell.style.display= "inline-block";
-                                divMemoryCell.style.margin = "3px 4px 3px 4px";
-                                this.memoryCells.push(divMemoryCell);
-                                divMemoryRow.appendChild(divMemoryCell);
+                                this.op.push(this.cpu.op);
+                                this.ouput.innerHTML = this.op.join('\n');
+                                this.ouput.scrollTop = this.ouput.scrollHeight;
                             }
+                            if (this.cpu.sp_changed)
+                                this.sp.style.backgroundColor = "yellow";
+                            else
+                                this.sp.style.backgroundColor = this.default_bg;
+                            if (this.cpu.pc_changed)
+                                this.pc.style.backgroundColor = "yellow";
+                            else
+                                this.pc.style.backgroundColor = this.default_bg;
                         }
+                        var addresses = changes[1];
+                        this.colour_cells(false, addresses);
                     }
+                    if (this.cpu.halted)
+                        return false;
+                    return true;
                 }
             }
 
-            render() 
-            {
-                this.pc.innerHTML = toHex(this.cpu.pc);
-                this.sp.innerHTML = toHex(this.cpu.sp);
-                for (let i=0; i<this.registers.length; i++)
-                    this.registers[i].innerHTML = toHex(this.cpu.registers[i]);
+            let content = document.createElement('div');
+            document.body.appendChild(content);
+            content.id = 'content';
 
-                for (let i=0; i<MEM_SIZE; ++i)
-                   this.memoryCells[i].innerHTML = toHex(this.cpu.memory[i]) + " ";
+            var divButtons = document.createElement('div');
+            divButtons.id = 'buttons';
+            divButtons.style.float = "top";
+            divButtons.style.width = "100%";
+            divButtons.style.border = "2px solid #d3d3d3";
+            content.appendChild(divButtons);
+
+            {
+                var button = document.createElement("BUTTON");
+                button.innerHTML = "Step";
+                button.addEventListener ("click", function() { step(); console.log("step button"); });
+                divButtons.appendChild(button);
             }
-        }
-
-        let content = document.createElement('div');
-        document.body.appendChild(content);
-        content.id = 'content';
-
-        var divButtons = document.createElement('div');
-        divButtons.id = 'buttons';
-        divButtons.style.float = "top";
-        divButtons.style.width = "100%";
-        divButtons.style.border = "2px solid #d3d3d3";
-        content.appendChild(divButtons);
-
-        {
-            var button = document.createElement("BUTTON");
-            button.innerHTML = "Step";
-            button.addEventListener ("click", function() { step(); alert("step")});
-            divButtons.appendChild(button);
-        }
-        {
-            var button = document.createElement("BUTTON");
-            button.innerHTML = "Run";
-            button.addEventListener ("click", function() { run(); alert("run")});
-            divButtons.appendChild(button);
-        }
-        {
-            var button = document.createElement("BUTTON");
-            button.innerHTML = "Reset";
-            button.addEventListener ("click", function() { reset(); alert("reset")});
-            divButtons.appendChild(button);
-        }
-
-        let acpu = new CPU();
-        let renderer = new Renderer(content, 10, acpu);
-        let loop;
-        let fps = 10;
-        let fpsInterval = 1000 / fps;
-        let startTime;
-        let now;
-        let then;
-        let elapsed;
-
-        function init() 
-        {
-            then = Date.now();
-            startTime = then;
-            //loop = requestAnimationFrame(step);
-        }
-
-        function step()
-        {
-            acpu.step();
-            renderer.render();
-        }
-        function run()
-        {
-            now = Date.now();
-            elapsed = now - then;
-
-            if (elapsed > fpsInterval) 
             {
-                acpu.step();
-                renderer.render();
+                var button = document.createElement("BUTTON");
+                button.innerHTML = "Run";
+                button.addEventListener ("click", function() { run(); console.log("run button"); });
+                divButtons.appendChild(button);
+            }
+            {
+                var button = document.createElement("BUTTON");
+                button.innerHTML = "Reset";
+                button.addEventListener ("click", function() { reset(); console.log("reset button"); });
+                divButtons.appendChild(button);
             }
 
-            //loop = requestAnimationFrame(run);
-        }
-        function reset()
-        {
-            listing = acpu.assemble(renderer.code.value);
-            var rc = listing[0];
-            var code = listing[1];
-            if (rc)
-                alert(code.toString());
-            else
-                alert("reset f");
-            acpu.reset(code);
-            renderer.render();
-        }
+            let acpu = new CPU();
+            let renderer = new Renderer(content, 10, acpu);
 
-        init();
-        renderer.render();
+            function init()
+            {
+            }
+
+            function step()
+            {
+                renderer.step();
+            }
+            function sleep(ms)
+            {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            async function arun()
+            {
+                var count = 1;
+                while (!acpu.halted && renderer.step())
+                {
+                    console.log("stepping " + count.toString());
+                    await sleep(30);
+                    count += 1;
+                }
+                console.log("halted");
+            }
+            function run()
+            {
+                if (acpu.halted)
+                {
+                    console.log("halted already");
+                    return;
+                }
+                arun();
+            }
+            function reset()
+            {
+                renderer.reset();
+            }
+
+            init();
+            renderer.set();
+
         </script>
 
 
@@ -746,4 +951,3 @@ JmpR 0 0`
 <!-- css None, duh -->
  
 <script>
-
