@@ -547,22 +547,25 @@ JmpR 0 0`;
                 }
             }
 
+            // create some css classes
+            memnormal_class_name = 'memnormal';
+            memitalic_class_name = 'memitalic';
+            {
+                let style = document.createElement('style');
+                style.type = 'text/css';
+                style.innerHTML = '.' + memitalic_class_name + ' { display: inline-block; margin: 3px 4px 3px 4px; font-style: italic; width: 2ch; }';
+                document.getElementsByTagName('head')[0].appendChild(style);
+                
+                style = document.createElement('style');
+                style.type = 'text/css';
+                style.innerHTML = '.' + memnormal_class_name + ' { display: inline-block; margin: 3px 4px 3px 4px; }';
+                document.getElementsByTagName('head')[0].appendChild(style);
+            }
+
             class Renderer 
             {
                 constructor(content, scale, acpu) 
                 {
-                    // create some css classes
-                    {
-                        let style = document.createElement('style');
-                        style.type = 'text/css';
-                        style.innerHTML = '.memitalic { display: inline-block; margin: 3px 4px 3px 4px; font-style: italic; width: 2ch; }';
-                        document.getElementsByTagName('head')[0].appendChild(style);
-                        
-                        style = document.createElement('style');
-                        style.type = 'text/css';
-                        style.innerHTML = '.memnormal { display: inline-block; margin: 3px 4px 3px 4px; }';
-                        document.getElementsByTagName('head')[0].appendChild(style);
-                    }
 
                     this.cpu = acpu;
                     
@@ -675,7 +678,7 @@ JmpR 0 0`;
                                     divMemoryRow.appendChild(divMemoryCell);
                                     if (row == 0 || col == 0)
                                     {
-                                        divMemoryCell.className = 'memitalic';
+                                        divMemoryCell.className = memitalic_class_name;
                                         if (row == 0 && col > 0)
                                             divMemoryCell.innerHTML = toHex(col-1) + " ";
                                         else if (row > 0 && col == 0)
@@ -683,7 +686,7 @@ JmpR 0 0`;
                                     }
                                     else
                                     {
-                                        divMemoryCell.className = 'memnormal';
+                                        divMemoryCell.className = memnormal_class_name;
                                         this.memoryCells.push(divMemoryCell);
                                     }
                                 }
