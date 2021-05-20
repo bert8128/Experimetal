@@ -551,6 +551,19 @@ JmpR 0 0`;
             {
                 constructor(content, scale, acpu) 
                 {
+                    // create some css classes
+                    {
+                        let style = document.createElement('style');
+                        style.type = 'text/css';
+                        style.innerHTML = '.memitalic { display: inline-block; margin: 3px 4px 3px 4px; font-style: italic; width: 2ch; }';
+                        document.getElementsByTagName('head')[0].appendChild(style);
+                        
+                        style = document.createElement('style');
+                        style.type = 'text/css';
+                        style.innerHTML = '.memnormal { display: inline-block; margin: 3px 4px 3px 4px; }';
+                        document.getElementsByTagName('head')[0].appendChild(style);
+                    }
+
                     this.cpu = acpu;
                     
                     content.style.fontFamily = "Courier New";
@@ -659,13 +672,10 @@ JmpR 0 0`;
                                 {
                                     var divMemoryCell = document.createElement('div');
                                     //divMemoryCell.style.border = "1px solid #d3d3d3";
-                                    divMemoryCell.style.display= "inline-block";
-                                    divMemoryCell.style.margin = "3px 4px 3px 4px";
                                     divMemoryRow.appendChild(divMemoryCell);
                                     if (row == 0 || col == 0)
                                     {
-                                        divMemoryCell.style.fontStyle = "italic";
-                                        divMemoryCell.style.width = 2 + "ch";
+                                        divMemoryCell.className = 'memitalic';
                                         if (row == 0 && col > 0)
                                             divMemoryCell.innerHTML = toHex(col-1) + " ";
                                         else if (row > 0 && col == 0)
@@ -673,6 +683,7 @@ JmpR 0 0`;
                                     }
                                     else
                                     {
+                                        divMemoryCell.className = 'memnormal';
                                         this.memoryCells.push(divMemoryCell);
                                     }
                                 }
@@ -946,8 +957,3 @@ JmpR 0 0`;
 
     </body>
 </html>
-
-
-<!-- css None, duh -->
- 
-<script>
