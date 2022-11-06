@@ -1,0 +1,2 @@
+brace_style = "AlwaysNextLine"
+struct_field_align_threshold = 40
