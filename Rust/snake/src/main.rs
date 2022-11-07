@@ -10,7 +10,7 @@ use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 
 use std::collections::LinkedList;
-use std::iter::FromIterator;
+//use std::iter::FromIterator;
 
 #[derive(Clone, PartialEq)]
 enum Direction
@@ -27,10 +27,21 @@ struct Body
 {
     body: LinkedList<Segment>,
 }
-impl Default for Body {
-    fn default() -> Self
+impl Body {
+    // Constructs a new instance of [`Second`].
+    // Note this is an associated function - no self.
+    pub fn new(x: u32, y: u32) -> Self
     {
-        Self { value: 0 }
+        let mut list: LinkedList<Segment> = LinkedList::new();
+        list.push_back(Segment(x, y));
+        list.push_back(Segment(x-1, y));
+        list.push_back(Segment(x-2, y));
+        list.push_back(Segment(x-3, y));
+        let b = Body
+        {
+            body: list,
+        };
+        return b;
     }
 }
 
@@ -45,15 +56,16 @@ impl Snake
     fn render(&self, gl: &mut GlGraphics, args: &RenderArgs)
     {
         const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
-        let squares: Vec<graphics::types::Rectangle> = 
+        const HEAD: [f32; 4] = [1.0, 1.0, 0.0, 1.0];
+        let mut squares: Vec<graphics::types::Rectangle> = 
             self.body.body
                 .iter()
-                .map(|p| Segment(p.0*self.sq_w, p.1*self.sq_w))
-                .map(|p| graphics::rectangle::square(p.0 as f64, p.1 as f64, self.sq_w as f64))
+                .map(|p| graphics::rectangle::square((p.0*self.sq_w) as f64, (p.1*self.sq_w) as f64, self.sq_w as f64))
                 .collect();
         gl.draw(args.viewport(), |c, gl|
             {
                 let transform = c.transform;
+                graphics::rectangle(HEAD, squares.remove(0), transform, gl);
                 squares
                     .into_iter()
                     .for_each(|square| graphics::rectangle(RED, square, transform, gl));
@@ -61,8 +73,7 @@ impl Snake
     }
     pub fn update(&mut self, rows: u32, cols: u32)
     {
-        let  old_head = self.body.front().expect("No head");
-        println!("{} {}", old_head.0.to_string(), old_head.1.to_string());
+        let old_head = self.body.body.front().expect("No head");
         if
                self.dir == Direction::Up    && old_head.1 == 0
             || self.dir == Direction::Down  && old_head.1 == rows-1
@@ -79,8 +90,8 @@ impl Snake
             Direction::Up    => head.1 -= 1,
             Direction::Down  => head.1 += 1,
         }
-        self.body.push_front(head);
-        self.body.pop_back();
+        self.body.body.push_front(head);
+        self.body.body.pop_back();
     }
 
     fn pressed(&mut self, btn: &Button)
@@ -151,13 +162,15 @@ fn main()
         cols: COLS,
         snake: Snake
         {
-            body: LinkedList::from_iter((vec![Segment(COLS/2,ROWS/2)]).into_iter()),
+            body: Body::new(COLS/2, ROWS/2),
             dir: Direction::Right,
             sq_w: SQ_W
         },
     };
 
-    let mut events = Events::new(EventSettings::new()).ups(5);
+    let mut events = Events::new(EventSettings::new()).ups(10);
+
+    let mut but: Option<Button> = None;
 
     while let Some(e) = events.next(&mut window)
     {
@@ -167,13 +180,21 @@ fn main()
         }
         if let Some(u) = e.update_args()
         {
+            if but.is_some()
+            {
+                game.pressed(&but.unwrap());
+            }
+            but = None;
             game.update();//&u);
         }
         if let Some(k) = e.button_args()
         {
             if k.state == ButtonState::Press
             {
-                game.pressed(&k.button);
+                if but.is_none()
+                {
+                    but = Some(k.button.clone());
+                }
             }
         }
     }
