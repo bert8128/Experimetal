@@ -10,7 +10,6 @@ use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 
 use std::collections::LinkedList;
-//use std::iter::FromIterator;
 
 #[derive(Clone, PartialEq)]
 enum Direction
@@ -21,44 +20,41 @@ enum Direction
     Down
 }
 
+
 #[derive(Clone)]
 struct Segment(u32, u32);
-struct Body
+
+
+struct Snake
 {
     body: LinkedList<Segment>,
+    dir: Direction,
+    sq_w: u32,
 }
-impl Body {
-    // Constructs a new instance of [`Second`].
-    // Note this is an associated function - no self.
-    pub fn new(x: u32, y: u32) -> Self
+
+impl Snake
+{
+    fn new(x: u32, y: u32 , w: u32) -> Self
     {
         let mut list: LinkedList<Segment> = LinkedList::new();
         list.push_back(Segment(x, y));
         list.push_back(Segment(x-1, y));
         list.push_back(Segment(x-2, y));
         list.push_back(Segment(x-3, y));
-        let b = Body
+        Snake
         {
             body: list,
-        };
-        return b;
+            dir: Direction::Right,
+            sq_w: w,
+        }
     }
-}
 
-pub struct Snake
-{
-    body: Body,
-    dir: Direction,
-    sq_w: u32,
-}
-impl Snake
-{
     fn render(&self, gl: &mut GlGraphics, args: &RenderArgs)
     {
         const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
         const HEAD: [f32; 4] = [1.0, 1.0, 0.0, 1.0];
         let mut squares: Vec<graphics::types::Rectangle> = 
-            self.body.body
+            self.body
                 .iter()
                 .map(|p| graphics::rectangle::square((p.0*self.sq_w) as f64, (p.1*self.sq_w) as f64, self.sq_w as f64))
                 .collect();
@@ -71,9 +67,10 @@ impl Snake
                     .for_each(|square| graphics::rectangle(RED, square, transform, gl));
             });
     }
-    pub fn update(&mut self, rows: u32, cols: u32)
+
+    fn update(&mut self, rows: u32, cols: u32)
     {
-        let old_head = self.body.body.front().expect("No head");
+        let old_head = self.body.front().expect("No head");
         if
                self.dir == Direction::Up    && old_head.1 == 0
             || self.dir == Direction::Down  && old_head.1 == rows-1
@@ -90,36 +87,33 @@ impl Snake
             Direction::Up    => head.1 -= 1,
             Direction::Down  => head.1 += 1,
         }
-        self.body.body.push_front(head);
-        self.body.body.pop_back();
+        self.body.push_front(head);
+        self.body.pop_back();
     }
 
     fn pressed(&mut self, btn: &Button)
     {
         self.dir = match btn
         {
-            &Button::Keyboard(Key::Up)    if self.dir != Direction::Down  => Direction::Up,
-            &Button::Keyboard(Key::Down)  if self.dir != Direction::Up    => Direction::Down,
-            &Button::Keyboard(Key::Left)  if self.dir != Direction::Right => Direction::Left,
-            &Button::Keyboard(Key::Right) if self.dir != Direction::Left  => Direction::Right,
-
-            &Button::Keyboard(Key::W)  if self.dir != Direction::Down  => Direction::Up,
-            &Button::Keyboard(Key::S)  if self.dir != Direction::Up    => Direction::Down,
-            &Button::Keyboard(Key::A)  if self.dir != Direction::Right => Direction::Left,
-            &Button::Keyboard(Key::D)  if self.dir != Direction::Left  => Direction::Right,
+            &Button::Keyboard(Key::Up)    | &Button::Keyboard(Key::W) if self.dir != Direction::Down  => Direction::Up,
+            &Button::Keyboard(Key::Down)  | &Button::Keyboard(Key::S) if self.dir != Direction::Up    => Direction::Down,
+            &Button::Keyboard(Key::Left)  | &Button::Keyboard(Key::A) if self.dir != Direction::Right => Direction::Left,
+            &Button::Keyboard(Key::Right) | &Button::Keyboard(Key::D) if self.dir != Direction::Left  => Direction::Right,
 
             _ => self.dir.clone(),
         };
     }
 }
 
-pub struct Game
+
+struct Game
 {
     gl: GlGraphics,
     rows: u32,
     cols: u32,
     snake: Snake,
 }
+
 impl Game
 {
     fn render(&mut self, arg: &RenderArgs)
@@ -143,6 +137,7 @@ impl Game
     }
 }
 
+
 fn main()
 {
     let opengl = OpenGL::V3_2;
@@ -160,12 +155,7 @@ fn main()
         gl: GlGraphics::new(opengl),
         rows: ROWS,
         cols: COLS,
-        snake: Snake
-        {
-            body: Body::new(COLS/2, ROWS/2),
-            dir: Direction::Right,
-            sq_w: SQ_W
-        },
+        snake: Snake::new(COLS/2, ROWS/2, SQ_W)
     };
 
     let mut events = Events::new(EventSettings::new()).ups(10);
