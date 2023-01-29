@@ -9,14 +9,12 @@ use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
-
-//use rand::{thread_rng, Rng};
-use rand::Rng;
-
-use std::collections::LinkedList;
-
 use opengl_graphics::*;
 use opengl_graphics::GlyphCache;
+use rand::Rng;
+use std::{thread, time::Duration};
+use std::collections::LinkedList;
+
 
 
 #[derive(Clone, PartialEq)]
@@ -247,6 +245,10 @@ fn main()
 
         while let Some(e) = events.next(&mut window)
         {
+            if (!ok)
+            {
+                thread::sleep(Duration::from_millis(100));
+            }
             if let Some(r) = e.render_args()
             {
                 game.render(&r, !ok);
