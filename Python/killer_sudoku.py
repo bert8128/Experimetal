@@ -278,10 +278,9 @@ class KillerSudokuSolver:
                 col = cell[1]
                 if self.g[row][col] == 0:
                     for n in possible_by_size_and_total:
-                    #for n in range(1,size+1):
-                        if self.possible_row_and_col(row,col,n):
-                            if self.possible_square(self.lower[row],self.lower[col],n):
-                                if self.possible_set2(row, col, n, cells, total):
+                        if self.possible_set2(row, col, n, cells, total):
+                            if self.possible_row_and_col(row,col,n):
+                                if self.possible_square(self.lower[row],self.lower[col],n):
                                     self.g[row][col] = n
                                     self.solve_recursively_cage()
                                     self.g[row][col] = 0
@@ -314,33 +313,23 @@ class KillerSudokuSolver:
         if self.solved_g:
             return
 
-        for set in self.set_list:
-            cells = self.set_list[set]
-            total = self.t[set-1]
+        for set,cells in self.set_list.items():
+            total = self.t[set]
             possible_tuples = self.all_combinations_tuples[len(cells)][total]
             possible_by_size_and_total = self.all_combinations[len(cells)][total]
             for cell in cells:
                 row = cell[0]
                 col = cell[1]
                 if self.g[row][col] == 0:
-                    if len(possible_tuples) < 4:
-                        for tpl in possible_tuples:
-                            for n in tpl:
-                                if self.possible_row_and_col(row,col,n):
-                                    if self.possible_square(self.lower[row],self.lower[col],n):
-                                        #if self.possible_set2(row, col, n, cells, total):
-                                            self.g[row][col] = n
-                                            self.solve_recursively_cage4()
-                                            self.g[row][col] = 0
-                    else:
-                        for n in possible_by_size_and_total:
+                    for tpl in possible_tuples:
+                        for n in tpl:
                             if self.possible_row_and_col(row,col,n):
                                 if self.possible_square(self.lower[row],self.lower[col],n):
                                     if self.possible_set2(row, col, n, cells, total):
                                         self.g[row][col] = n
                                         self.solve_recursively_cage4()
                                         self.g[row][col] = 0
-                    return
+                        return
         self.solved_g = copy.deepcopy(self.g)
 
 
